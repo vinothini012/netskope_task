@@ -1,4 +1,4 @@
-# Vulnerable Python Code (Educational Purpose)
+# Vulnerable Python Code 
 
 **Warning:** This repository contains intentionally vulnerable code. Do not use in production. Use this code only for educational purposes to understand security vulnerabilities like SSRF and XSS and their mitigations.
 
