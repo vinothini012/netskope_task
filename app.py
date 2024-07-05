@@ -1,19 +1,21 @@
-from flask import Flask, render_template, request
+import requests
 
-app = Flask(__name__)
+def get_repo_owner(github_token, repo_full_name):
+    url = f"https://api.github.com/repos/{repo_full_name}"
+    headers = {'Authorization': f'token {github_token}'}
+    response = requests.get(url, headers=headers)
 
-@app.route("/")
-def index():
-    # Replace with secure input validation and escaping
-    user_name = request.args.get("name", "")
-    return render_template("index.html", name=user_name)
+    if response.status_code == 200:
+        repo_data = response.json()
+        repo_owner = repo_data['owner']['login']
+        return repo_owner
+    else:
+        print(f"Failed to fetch repository details: {response.status_code}")
+        return None
 
-@app.route("/search")
-def search():
-    # Replace with secure database interactions with parameterized queries
-    query = request.args.get("query", "")
-    # Database interaction here (not shown due to security concerns)
-    return "Search results..."
-
-if __name__ == "__main__":
-    app.run(debug=True)
+# Example usage
+github_token = 'your_github_token'
+repo_full_name = 'owner/repository'  # Replace with actual owner/repository
+repo_owner = get_repo_owner(github_token, repo_full_name)
+if repo_owner:
+    print(f"Repository owner: {repo_owner}")
