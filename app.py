@@ -12,7 +12,7 @@ def index():
 def search():
     # Replace with secure database interactions with parameterized queries
     query = request.args.get("query", "")
-    # Database interaction here (not shown due to security concerns)
+    # Database interaction here (
     return "Search results..."
 
 if __name__ == "__main__":
