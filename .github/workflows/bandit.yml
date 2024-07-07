@@ -1,4 +1,4 @@
-=name: Bandit Security Scan
+name: Bandit Security Scan
 
 on:
   pull_request:
