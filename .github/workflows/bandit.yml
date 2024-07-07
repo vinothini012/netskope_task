@@ -9,19 +9,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'  # Specify your Python version
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install bandit
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
 
-    - name: Run Bandit
-      run: bandit -r .
+      - name: Run Bandit
+        id: bandit
+        run: |
+          bandit -r . -f json -o bandit_results.json || echo "::set-output name=has_critical::false"
+
+      - name: Check Bandit Results
+        id: check_results
+        run: |
+          has_critical=$(jq '.results[] | select(.issue_severity >= "CRITICAL") | any' bandit_results.json)
+          echo "::set-output name=has_critical::$has_critical"
+
+      - name: Comment on Pull Request
+        if: ${{ steps.bandit.outputs.has_critical == 'true' }}
+        run: |
+          echo "Block"
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"body": "Block"}' \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
+
+      - name: Auto-Merge Pull Request
+        if: ${{ steps.bandit.outputs.has_critical != 'true' }}
+        run: |
+          echo "Successful"
+          curl -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"merge_method": "merge"}' \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge
 
