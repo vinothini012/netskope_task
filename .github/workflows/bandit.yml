@@ -21,17 +21,26 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          # Install any necessary tools for vulnerability scanning (e.g., safety, bandit)
+          if [ -f requirements.txt ]; then
+            pip install --upgrade pip
+            pip install -r requirements.txt
+          else
+            echo "requirements.txt not found, skipping dependency installation."
+            exit 1  # Exit with non-zero status if requirements.txt is not found
+          fi
 
       - name: Scan for vulnerabilities
         id: scan
         run: |
           # Example using safety to check for vulnerabilities
           # Customize this to match your actual scanning process
-          safety check --output=json > safety_report.json
-          critical_count=$(jq '.vulnerabilities[] | select(.severity == "critical") | length' safety_report.json)
-          echo "CRITICAL_COUNT=${critical_count}" >> $GITHUB_ENV
+          if [ -f requirements.txt ]; then
+            safety check --output=json > safety_report.json
+            critical_count=$(jq '[.vulnerabilities[] | select(.severity == "critical")] | length' safety_report.json)
+            echo "CRITICAL_COUNT=${critical_count}" >> $GITHUB_ENV
+          else
+            echo "No requirements.txt found, skipping vulnerability scan."
+            echo "CRITICAL_COUNT=0" >> $GITHUB_ENV
 
       - name: Decide on PR action
         run: |
