@@ -1,51 +1,26 @@
-name: Pull Request CI
+name: Bandit Security Scan
 
 on:
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [ main ]
 
 jobs:
-  build:
+  bandit_scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'  # Replace with your Python version
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'  # Specify your Python version
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          # Install any necessary tools for vulnerability scanning (e.g., safety, bandit)
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit
 
-      - name: Scan for vulnerabilities
-        id: scan
-        run: |
-          # Example using safety to check for vulnerabilities
-          # Customize this to match your actual scanning process
-          safety check --output=json > safety_report.json
-          critical_count=$(jq '.vulnerabilities[] | select(.severity == "critical") | length' safety_report.json)
-          echo "CRITICAL_COUNT=${critical_count}" >> $GITHUB_ENV
-
-      - name: Decide on PR action
-        run: |
-          if [ "${{ env.CRITICAL_COUNT }}" -gt 0 ]; then
-            echo "Critical or above vulnerability found. Blocking PR."
-            # Block the PR with a comment
-            gh pr comment ${{ github.event.pull_request.number }} --body "Block"
-            exit 1  # Exit with non-zero status to indicate failure
-          else
-            echo "No critical or above vulnerabilities found. Auto-merging PR."
-            # Auto-merge the PR with a comment
-            gh pr comment ${{ github.event.pull_request.number }} --body "Successful"
-
-      - name: Auto-merge PR (if applicable)
-        if: success()
-        run: |
-          gh pr merge ${{ github.event.pull_request.number }} --auto
+    - name: Run Bandit
+      run: bandit -r .
